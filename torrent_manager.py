@@ -30,8 +30,8 @@ SB_COOKIE = "emailsdedi=75ff51b04817e8a2c4117ac14d180ede; idsdedi=TVVDRzZIdmRTVk
 #  TELEGRAM NOTIFICATIONS
 # ─────────────────────────────────────────────
 
-TG_TOKEN   = "8581674091:AAHLky0Cz-t3RGnPQNblEtWtSoOpnlKRvG0"
-TG_CHAT_ID = "5296733290"
+TG_TOKEN   = "ton token"
+TG_CHAT_ID = "ton id"
 
 def notify(msg, silent=False):
     try:
