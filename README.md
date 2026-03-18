@@ -1,7 +1,3 @@
-Parfait, Étienne. Je te prépare un **README complet, clair, pro et prêt à l’emploi**, pensé pour que *n’importe qui* puisse installer, configurer et adapter ton script à sa seedbox.  
-Style GitHub, sections propres, instructions reproductibles, et un tuto simple pour récupérer les cookies.
-
-Tu peux le coller tel quel dans ton repo.
 
 ---
 
