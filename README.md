@@ -142,10 +142,3 @@ Merci de conserver un lien vers le repo original.
 
 ---
 
-Si tu veux, je peux aussi te générer :
-- un **badge pack** (Python, version, status)  
-- un **logo minimaliste** pour ton repo  
-- une **section "Roadmap"**  
-- une **section "API / Hooks"** si ton script évolue  
-
-Tu veux une version plus courte, plus technique, ou plus orientée “produit” ?
