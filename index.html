@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💾 DODAR - Torrent Monitoring - C411 v1.0.0</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+:root {
+  --bg:#080f0a;--bg2:#0d1a0f;--bg3:#122116;--bg4:#192d1e;--bg5:#1f3626;
+  --border:rgba(0,200,80,0.08);--border2:rgba(0,200,80,0.15);--border3:rgba(0,200,80,0.28);
+  --text:#d4f0dc;--text2:#7aad88;--text3:#3d6647;
+  --green:#00e676;--green2:#00c853;--green3:#00a844;--green-dim:rgba(0,230,118,0.1);
+  --orange:#ffb74d;--orange-dim:rgba(255,183,77,0.1);
+  --red:#ef5350;--red-dim:rgba(239,83,80,0.1);
+  --blue:#4fc3f7;
+  --mono:'Share Tech Mono',monospace;
+  --rsm:7px;--rmd:11px;--rlg:15px;--rxl:18px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;}
+@media (max-width:600px){html,body{height:auto;overflow:auto;}}
+
+/* LOGIN */
+.login-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:28px;}
+.login-screen.hidden{display:none;}
+.login-logo{font-size:22px;font-weight:800;color:var(--green);letter-spacing:1px;text-align:center;}
+.login-logo span{color:var(--text2);font-weight:500;font-size:12px;display:block;margin-top:4px;letter-spacing:2px;}
+.login-box{background:var(--bg2);border:1px solid var(--border3);border-radius:var(--rxl);padding:26px;width:300px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px rgba(0,0,0,0.7);}
+.login-box input{background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:13px;padding:8px 10px;border-radius:var(--rsm);outline:none;width:100%;}
+.login-box input:focus{border-color:var(--green);box-shadow:0 0 0 2px rgba(0,200,80,0.12);}
+.login-error{font-size:11px;color:var(--red);display:none;text-align:center;}
+.btn-login{padding:10px;background:linear-gradient(135deg,var(--green3),var(--green2));border:none;color:#081008;font-weight:700;border-radius:var(--rmd);cursor:pointer;font-size:13px;}
+
+/* APP */
+.app{display:grid;grid-template-rows:46px auto 1fr;height:100vh;padding:0 18px 14px;}
+
+/* TITLEBAR */
+.titlebar{display:flex;align-items:center;justify-content:space-between;padding:0 4px;border-bottom:1px solid var(--border2);flex-shrink:0;}
+.brand{font-size:13px;font-weight:700;color:var(--green);}
+.brand span{color:var(--text2);font-weight:500;}
+.status-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:20px;font-size:11px;color:var(--text2);}
+.status-dot{width:5px;height:5px;border-radius:50%;background:var(--text3);transition:background .3s;}
+.status-dot.active{background:var(--green);box-shadow:0 0 5px var(--green);}
+.status-dot.pulse{animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr) 2fr;gap:7px;padding:10px 0 9px;flex-shrink:0;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rlg);padding:10px 13px;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,200,80,0.1),transparent);}
+.stat-card.c-green{border-color:rgba(0,230,118,0.18);}
+.stat-card.c-blue{border-color:rgba(79,195,247,0.18);}
+.stat-card.c-orange{border-color:rgba(255,183,77,0.18);}
+.stat-card.c-red{border-color:rgba(239,83,80,0.18);}
+.stat-label{font-size:9px;font-weight:600;color:var(--text3);letter-spacing:.6px;text-transform:uppercase;margin-bottom:3px;}
+.stat-value{font-size:19px;font-weight:700;letter-spacing:-.5px;color:var(--text);}
+.sv-green{color:var(--green);} .sv-blue{color:var(--blue);} .sv-orange{color:var(--orange);} .sv-red{color:var(--red);}
+.storage-card{display:flex;flex-direction:column;justify-content:center;gap:7px;}
+.storage-header{display:flex;justify-content:space-between;align-items:baseline;}
+.storage-title{font-size:9px;font-weight:600;color:var(--text3);letter-spacing:.6px;text-transform:uppercase;}
+.storage-nums{font-size:12px;font-weight:600;color:var(--text2);}
+.storage-track{height:5px;background:var(--bg5);border-radius:3px;overflow:hidden;}
+.storage-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--green3),var(--green));transition:width .6s;box-shadow:0 0 8px rgba(0,200,80,0.3);}
+.storage-fill.warn{background:linear-gradient(90deg,#e67e00,var(--orange));}
+.storage-fill.danger{background:linear-gradient(90deg,#b71c1c,var(--red));}
+.storage-pct{font-size:9px;color:var(--text3);}
+
+/* MAIN */
+.main{display:grid;grid-template-columns:1fr 290px;gap:9px;min-height:0;}
+
+/* PANELS */
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rxl);display:flex;flex-direction:column;min-height:0;overflow:hidden;position:relative;}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,200,80,0.08),transparent);pointer-events:none;}
+.panel-header{display:flex;align-items:center;justify-content:space-between;padding:10px 15px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.panel-title{font-size:13px;font-weight:600;color:var(--text);letter-spacing:-.2px;}
+.panel-badge{font-size:10px;font-weight:600;color:var(--green);background:var(--green-dim);padding:2px 9px;border-radius:20px;border:1px solid rgba(0,230,118,0.2);}
+
+/* TABLE TORRENTS */
+.col-hdr{display:grid;grid-template-columns:1fr 80px 100px 80px 64px;gap:5px;padding:5px 15px;border-bottom:1px solid var(--border);font-size:9px;font-weight:600;color:var(--text3);letter-spacing:.6px;text-transform:uppercase;flex-shrink:0;}
+.torrent-list{overflow-y:auto;flex:1;}
+.torrent-list::-webkit-scrollbar{width:4px;}
+.torrent-list::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px;}
+.trow{display:grid;grid-template-columns:1fr 80px 100px 80px 64px;align-items:center;gap:5px;padding:6px 15px;border-bottom:1px solid var(--border);transition:background .1s;}
+.trow:hover{background:rgba(0,200,80,0.03);}
+.trow.ignored{opacity:.45;}
+.trow:last-child{border-bottom:none;}
+.tname{font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);}
+.tcell{font-size:10px;text-align:right;color:var(--text2);}
+.tcell.up-ok{color:var(--green);font-weight:600;}
+.tcell.up-mid{color:var(--orange);}
+.tcell.up-bad{color:var(--red);}
+.tactions{display:flex;gap:4px;justify-content:flex-end;}
+.btn-icon{background:none;border:none;cursor:pointer;width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .12s;color:var(--text3);}
+.btn-icon:hover{background:var(--red-dim);color:var(--red);}
+.btn-icon.active-on{color:var(--green);}
+.btn-icon.ignored-on{color:var(--red);}
+.btn-icon.ignore-btn:hover{background:var(--red-dim);color:var(--red);}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:7px;padding:40px;}
+.empty-icon{font-size:28px;opacity:.2;}
+.empty-text{font-size:13px;font-weight:500;color:var(--text3);}
+
+/* SIDEBAR */
+.sidebar{display:flex;flex-direction:column;gap:8px;min-height:0;}
+
+/* ACTIVITY LOG */
+.log-panel{flex:1;min-height:0;}
+.log-list{overflow-y:auto;flex:1;padding:6px 0;}
+.log-list::-webkit-scrollbar{width:3px;}
+.log-list::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px;}
+.log-item{display:flex;gap:8px;padding:5px 13px;border-bottom:1px solid var(--border);font-size:10px;line-height:1.4;}
+.log-item:last-child{border-bottom:none;}
+.log-time{color:var(--text3);font-family:var(--mono);flex-shrink:0;}
+.log-badge{font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;text-transform:uppercase;flex-shrink:0;align-self:flex-start;margin-top:1px;}
+.log-badge.ajout{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,230,118,0.2);}
+.log-badge.suppr{background:var(--red-dim);color:var(--red);border:1px solid rgba(239,83,80,0.2);}
+.log-badge.info{background:var(--bg4);color:var(--text3);border:1px solid var(--border2);}
+.log-name{color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.log-detail{color:var(--text3);font-size:9px;}
+
+/* IGNORE LIST */
+.ignore-panel{flex-shrink:0;}
+.ignore-list{padding:8px 13px;display:flex;flex-direction:column;gap:5px;max-height:120px;overflow-y:auto;}
+.ignore-item{display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--text2);gap:6px;}
+.ignore-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.btn-unignore{background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;flex-shrink:0;padding:2px 4px;border-radius:3px;}
+.btn-unignore:hover{color:var(--red);}
+.ignore-empty{font-size:10px;color:var(--text3);padding:8px 13px;}
+
+/* ── RESPONSIVE MOBILE (iPhone 12 : 390px) ── */
+@media (max-width: 600px) {
+  html,body{overflow:auto;height:auto;}
+  .app{grid-template-rows:auto auto auto;height:auto;padding:0 10px 16px;}
+
+  /* Titlebar */
+  .titlebar{padding:8px 4px;}
+  .brand{font-size:12px;}
+  .brand span{display:none;}
+  .status-pill{font-size:10px;padding:3px 8px;}
+
+  /* Stats — 3 colonnes sur mobile */
+  .stats-row{grid-template-columns:repeat(3,1fr);gap:6px;padding:8px 0;}
+  .storage-card{grid-column:1/-1;}
+  .stat-value{font-size:16px;}
+
+  /* Main — colonne unique */
+  .main{grid-template-columns:1fr;gap:8px;}
+
+  /* Table torrents simplifiée : nom + taille + upload */
+  .col-hdr{grid-template-columns:1fr 65px 52px;gap:4px;padding:4px 10px;}
+  .col-hdr span:nth-child(4),
+  .col-hdr span:nth-child(5){display:none;}
+  .trow{grid-template-columns:1fr 65px 52px;gap:4px;padding:6px 10px;}
+  .trow>div:nth-child(4),
+  .trow>.tactions{display:none;}
+  .tname{font-size:10px;}
+  .tcell{font-size:10px;}
+
+  /* Sidebar */
+  .log-panel{min-height:160px;}
+  .log-list{max-height:160px;}
+  .ignore-list{max-height:90px;}
+
+  /* Overlays */
+  .confirm-box{width:calc(100vw - 40px);}
+  .login-box{width:calc(100vw - 48px);}
+}
+
+/* OVERLAY */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);backdrop-filter:blur(16px);z-index:1000;align-items:center;justify-content:center;cursor:pointer;}
+.overlay.show{display:flex;}
+.overlay>*{cursor:default;}
+.confirm-box{background:var(--bg2);border:1px solid var(--border3);border-radius:var(--rxl);padding:22px;width:310px;box-shadow:0 24px 60px rgba(0,0,0,0.8);}
+.confirm-box h3{font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;}
+.confirm-box p{font-size:11px;color:var(--text2);margin-bottom:18px;line-height:1.5;word-break:break-all;}
+.confirm-btns{display:flex;gap:8px;}
+.confirm-btns button{flex:1;padding:8px;font-family:-apple-system,sans-serif;font-size:12px;font-weight:500;border-radius:var(--rsm);cursor:pointer;border:none;transition:all .12s;}
+.btn-yes{background:var(--red);color:#fff;}
+.btn-yes:hover{filter:brightness(1.1);}
+.btn-no{background:var(--bg3);color:var(--text2);border:1px solid var(--border2)!important;}
+.btn-no:hover{border-color:var(--green)!important;color:var(--text);}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-logo">💾 DODAR C411<span>TORRENT MONITORING v1.0.0</span></div>
+  <div class="login-box">
+    <input type="password" id="login-pass" placeholder="Mot de passe" autofocus>
+    <div class="login-error" id="login-error">Mot de passe incorrect</div>
+    <button class="btn-login" onclick="doLogin()">Se connecter</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app" style="display:none">
+
+  <div class="titlebar">
+    <div class="brand">💾 DODAR <span>— Torrent Monitoring — C411 v1.0.0</span></div>
+    <div class="status-pill">
+      <div class="status-dot active pulse" id="status-dot"></div>
+      <span id="status-txt">Synchronisation...</span>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card c-green">
+      <div class="stat-label">Torrents</div>
+      <div class="stat-value sv-green" id="s-count">—</div>
+    </div>
+    <div class="stat-card c-blue">
+      <div class="stat-label">Émission</div>
+      <div class="stat-value sv-blue" id="s-upload">—</div>
+    </div>
+    <div class="stat-card c-orange">
+      <div class="stat-label">Stockage</div>
+      <div class="stat-value sv-orange" id="s-size">—</div>
+    </div>
+    <div class="stat-card c-red">
+      <div class="stat-label">Lents</div>
+      <div class="stat-value sv-red" id="s-slow">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Ignorés</div>
+      <div class="stat-value" id="s-ignored">—</div>
+    </div>
+    <div class="stat-card storage-card">
+      <div class="storage-header">
+        <span class="storage-title">Espace utilisé</span>
+        <span class="storage-nums" id="s-bar-txt">0 / 35 Go</span>
+      </div>
+      <div class="storage-track"><div class="storage-fill" id="s-fill" style="width:0%"></div></div>
+      <div class="storage-pct" id="s-pct">0%</div>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- TORRENTS -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Torrents en seed</span>
+        <span class="panel-badge" id="p-count">—</span>
+      </div>
+      <div class="col-hdr">
+        <span>Nom</span>
+        <span style="text-align:right">Taille</span>
+        <span style="text-align:right">Émission</span>
+        <span style="text-align:right">Statut</span>
+        <span style="text-align:right">Actions</span>
+      </div>
+      <div class="torrent-list" id="torrent-list">
+        <div class="empty"><div class="empty-icon">📡</div><div class="empty-text">Chargement...</div></div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+      <!-- ACTIVITE -->
+      <div class="panel log-panel">
+        <div class="panel-header">
+          <span class="panel-title">Journal d'activité</span>
+          <span class="panel-badge" id="log-count">0</span>
+        </div>
+        <div class="log-list" id="log-list">
+          <div class="empty" style="height:80px"><div class="empty-text">Aucune activité</div></div>
+        </div>
+      </div>
+
+      <!-- IGNORES -->
+      <div class="panel ignore-panel">
+        <div class="panel-header">
+          <span class="panel-title">Torrents ignorés</span>
+          <span class="panel-badge" id="ignore-count">0</span>
+        </div>
+        <div id="ignore-list-el" class="ignore-list">
+          <div class="ignore-empty">Aucun torrent ignoré</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE -->
+<div class="overlay" id="overlay-del" onclick="if(event.target===this)closeOverlay('overlay-del')">
+  <div class="confirm-box">
+    <h3>Supprimer ce torrent ?</h3>
+    <p id="confirm-name"></p>
+    <div class="confirm-btns">
+      <button class="btn-no" onclick="closeOverlay('overlay-del')">Annuler</button>
+      <button class="btn-yes" onclick="confirmDelete()">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const LOGIN_PASS = 'admin';
+let pendingDelete = null;
+let refreshTimer  = null;
+
+// ── LOGIN ──
+function doLogin() {
+  if (document.getElementById('login-pass').value === LOGIN_PASS) {
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app').style.display = 'grid';
+    loadData();
+    refreshTimer = setInterval(loadData, 30000);
+  } else {
+    const e = document.getElementById('login-error');
+    e.style.display = 'block';
+    setTimeout(() => e.style.display = 'none', 2500);
+  }
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !document.getElementById('login-screen').classList.contains('hidden')) doLogin();
+});
+
+// ── CHARGEMENT DATA ──
+async function loadData() {
+  try {
+    const r = await fetch('data.json?t=' + Date.now());
+    if (!r.ok) throw new Error();
+    const data = await r.json();
+    renderStats(data.stats);
+    renderTorrents(data.torrents, data.ignore_list || []);
+    renderActivity(data.activity || []);
+    renderIgnoreList(data.ignore_list || []);
+    document.getElementById('status-dot').classList.add('active');
+    document.getElementById('status-txt').textContent = 'En ligne · ' + new Date().toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
+  } catch {
+    document.getElementById('status-dot').classList.remove('active');
+    document.getElementById('status-txt').textContent = 'Hors ligne';
+  }
+}
+
+// ── STATS ──
+function renderStats(s) {
+  document.getElementById('s-count').textContent   = s.total_count;
+  document.getElementById('s-upload').textContent  = s.total_up.toFixed(2) + ' Mo/s';
+  document.getElementById('s-size').textContent    = s.total_size.toFixed(1) + ' Go';
+  document.getElementById('s-slow').textContent    = s.slow_count;
+  document.getElementById('s-bar-txt').textContent = `${s.total_size.toFixed(1)} / ${s.max_size} Go`;
+  document.getElementById('s-pct').textContent     = Math.min(100,(s.total_size/s.max_size*100)).toFixed(0) + '%';
+  const pct  = Math.min(100, s.total_size / s.max_size * 100);
+  const fill = document.getElementById('s-fill');
+  fill.style.width = pct + '%';
+  fill.className   = 'storage-fill' + (pct > 90 ? ' danger' : pct > 70 ? ' warn' : '');
+}
+
+// ── TORRENTS ──
+function renderTorrents(list, ignoreList) {
+  const el = document.getElementById('torrent-list');
+  document.getElementById('p-count').textContent = list.length + ' actif' + (list.length > 1 ? 's' : '');
+  document.getElementById('s-ignored').textContent = ignoreList.length;
+
+  if (!list.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📡</div><div class="empty-text">Aucun torrent</div></div>';
+    return;
+  }
+
+  el.innerHTML = list.map(t => {
+    const sizeGo   = (t.size / 1024**3).toFixed(2);
+    const upKo     = t.up_speed;
+    const upCls    = upKo >= 500 ? 'up-ok' : upKo >= 100 ? 'up-mid' : 'up-bad';
+    const upTxt    = fmtSpeed(upKo);
+    const ignored  = ignoreList.includes(t.name);
+    const stateTxt = ignored ? '🔕 Ignoré' : (t.state === 1 ? '● Actif' : '○ Arrêté');
+    const stateCl  = ignored ? 'sv-orange' : (t.state === 1 ? 'sv-green' : '');
+
+    return `<div class="trow${ignored ? ' ignored' : ''}">
+      <div class="tname" title="${t.name}">${t.name}</div>
+      <div class="tcell">${sizeGo} Go</div>
+      <div class="tcell ${upCls}">${upTxt}</div>
+      <div class="tcell ${stateCl}" style="font-size:9px">${stateTxt}</div>
+      <div class="tactions">
+        <button class="btn-icon ignore-btn ${ignored ? 'ignored-on' : 'active-on'}" title="${ignored ? 'Retirer des ignorés' : 'Ignorer ce torrent'}" onclick="toggleIgnore('${esc(t.name)}')">🔔</button>
+        <button class="btn-icon" title="Supprimer" onclick="askDelete('${esc(t.hash)}','${esc(t.name)}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── ACTIVITY ──
+function renderActivity(logs) {
+  const el = document.getElementById('log-list');
+  document.getElementById('log-count').textContent = logs.length;
+  if (!logs.length) {
+    el.innerHTML = '<div class="empty" style="height:80px"><div class="empty-text">Aucune activité</div></div>';
+    return;
+  }
+  el.innerHTML = logs.map(l => `
+    <div class="log-item">
+      <span class="log-time">${l.time}</span>
+      <span class="log-badge ${l.action}">${l.action === 'ajout' ? '+ Ajout' : l.action === 'suppr' ? '- Suppr' : 'Info'}</span>
+      <div style="overflow:hidden">
+        <div class="log-name">${l.name}</div>
+        ${l.detail ? `<div class="log-detail">${l.detail}</div>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+// ── IGNORE LIST ──
+function renderIgnoreList(list) {
+  const el = document.getElementById('ignore-list-el');
+  if (!list.length) {
+    el.innerHTML = '<div class="ignore-empty">Aucun torrent ignoré</div>';
+    return;
+  }
+  el.innerHTML = list.map(name => `
+    <div class="ignore-item">
+      <span title="${name}">${name}</span>
+      <button class="btn-unignore" onclick="toggleIgnore('${esc(name)}')" title="Retirer">✕</button>
+    </div>`).join('');
+}
+
+// ── IGNORE API ──
+async function toggleIgnore(name) {
+  try {
+    const r = await fetch('data.json?t=' + Date.now());
+    const data = await r.json();
+    let list = data.ignore_list || [];
+    if (list.includes(name)) {
+      list = list.filter(n => n !== name);
+    } else {
+      list.push(name);
+    }
+    // Sauvegarde côté serveur via POST sur /api/ignore
+    await fetch('/api/ignore', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ignore_list: list})
+    });
+    loadData();
+  } catch {
+    // Si pas d'API, affichage local uniquement
+    loadData();
+  }
+}
+
+// ── DELETE ──
+function askDelete(hash, name) {
+  pendingDelete = {hash, name};
+  document.getElementById('confirm-name').textContent = name;
+  document.getElementById('overlay-del').classList.add('show');
+}
+
+async function confirmDelete() {
+  if (!pendingDelete) return;
+  try {
+    await fetch('/api/delete', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({hash: pendingDelete.hash, name: pendingDelete.name})
+    });
+  } catch {}
+  closeOverlay('overlay-del');
+  setTimeout(loadData, 1500);
+}
+
+function closeOverlay(id) {
+  document.getElementById(id).classList.remove('show');
+  pendingDelete = null;
+}
+
+// ── UTILS ──
+function fmtSpeed(kbs) {
+  if (kbs >= 1000) return (kbs/1000).toFixed(1) + ' Mo/s';
+  return kbs + ' Ko/s';
+}
+
+function esc(s) {
+  return (s||'').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+</script>
+</body>
+</html>
